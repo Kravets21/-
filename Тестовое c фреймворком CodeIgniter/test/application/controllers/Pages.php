@@ -19,33 +19,31 @@
 	
 	public function getDataWithoutJoin() //функция для первого задания, чтобы не грузить метод view
 	{
-		$data['buyers'] = $this->buyers_model->get_buyers();
-		$data['requests'] = $this->requests_model->get_requests();
-		$data['requests_info'] = $this->requests_info_model->get_requests_info();
-		// Полагаю методов решения есть много, на ум пришло также использовать UNION в запросе к бд, но решил оставить так
+		$buyers = $this->buyers_model->get_buyers();
+		$requests = $this->requests_model->get_requests();
+		$requests_info = $this->requests_info_model->get_requests_info();
+
 		$arr['name'] = array();
 		$arr['sum'] = array();
 		$arr['info'] = array();
 		$arr['buyer_id'] = array();
-		
 
-		for ($i = 0; $i != sizeof($data['buyers']); $i++)
+		foreach($buyers as $buyers_row => $buyers_key)
 		{
-			array_push($arr['buyer_id'], $data['buyers'][$i]['buyer_id']); 
-			array_push($arr['name'], $data['buyers'][$i]['name']);
-		    for ($j = 0; $j != sizeof($data['requests']); $j++)
+		    array_push($arr['buyer_id'], $buyers_key['buyer_id']); 
+		    array_push($arr['name'], $buyers_key['name']);
+		    foreach($requests as $req_row => $req_key)
 		    {
-			    if($data['buyers'][$i]['buyer_id'] === $data['requests'][$j]['buyer_id'])
+			    if($buyers_key['buyer_id'] === $req_key['buyer_id'])
 			    {
-				    array_push($arr['sum'], $data['requests'][$j]['sum']);
+				    array_push($arr['sum'], $req_key['sum']);
 			    }
-			    
-			    if(isset($data['requests_info'][$i]['request_id'])) //пофиксить + настроить пути и все + сделать функцию для этого
+			    foreach($requests_info as $info_row => $info_key)
 			    {
-				if($data['requests_info'][$i]['request_id'] === $data['requests'][$j]['request_id'])
-				{
-				    array_push($arr['info'], $data['requests_info'][$i]['info']);
-				}
+				    if(isset($info_key['request_id']) && $info_key['request_id'] === $req_key['request_id'] && !in_array($info_key['info'], $arr['info'])) 
+				    {
+						array_push($arr['info'], $info_key['info']);
+				    }
 			    }
 		    }
 		}
