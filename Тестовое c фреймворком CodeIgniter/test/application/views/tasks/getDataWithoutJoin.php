@@ -9,23 +9,43 @@
 		<th>Info</th>
 	      </tr>    
 	
-	<?php for($i = 0; $i != sizeof($buyer_id);$i++):?>  
+	<?php foreach($data as $data_key => $buyers):?>
+	      <tr>
+	<?php foreach ($buyers as $buyers_key => $buyers_value):?>
+	<?php foreach ($buyers_value as $key => $buyer):?>
+	   
+	<?php if (isset($buyer['buyer_id']) && isset($buyer['name'])) {
+	    echo "<td>";
+	    echo $buyer['buyer_id'];
+	    echo "</td>";
+	}?>
+		
+	
+	<?php if (isset($buyer['name']) && isset($buyer['buyer_id'])) {
+	    echo "<td>";
+	    echo $buyer['name'];
+	    echo "</td>";
+	}?>
+	
+	
+	<?php if (isset($buyer['sum'])) {
+	    echo "<td>";
+	    echo $buyer['sum'];
+	    echo "</td>";
+	}?>
+	
+	
+	<?php if (isset($buyer['info'])) {
+	    echo "<td>";
+	    echo $buyer['info'];
+	    echo "</td>";
+	}?>
+	
+	<?php endforeach;?>
+	<?php endforeach;?>
+	       </tr>
+	<?php endforeach;?>
 	    
-	<tr>   
-	<td><?php echo $buyer_id[$i]?></td>	
-	
-	<td><?php echo $name[$i]?></td>
-	
-	<td><?php echo $sum[$i]?></td>
-	
-	<td><?php 
-	if(empty($info[$i]))
-	{echo 'empty';}
-	else
-	{echo $info[$i];}?></td> 
-	
-	</tr>
-	<?php endfor; ?>
 
 </table>
 

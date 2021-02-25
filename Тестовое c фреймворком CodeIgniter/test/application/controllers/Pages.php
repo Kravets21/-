@@ -7,7 +7,6 @@
                 $this->load->model('buyers_model'); //подключаем модели трех таблиц 
 		$this->load->model('requests_info_model');
 		$this->load->model('requests_model');
-		$this->load->helper('url');
         }
 	
 	public function index() //по умолчанию
@@ -22,58 +21,87 @@
 		$buyers = $this->buyers_model->get_buyers();
 		$requests = $this->requests_model->get_requests();
 		$requests_info = $this->requests_info_model->get_requests_info();
-
-		$arr['name'] = array();
-		$arr['sum'] = array();
-		$arr['info'] = array();
-		$arr['buyer_id'] = array();
-
-		foreach($buyers as $buyers_row => $buyers_key)
+		
+		$arr = array(); // тут будет результат
+		$requests_info_tmp = array(); //временный массив для доп инф.
+		foreach($requests as $request_row => $request) // заранее записываем дополнительную информацию из 3-ей таблицы
 		{
-		    array_push($arr['buyer_id'], $buyers_key['buyer_id']); 
-		    array_push($arr['name'], $buyers_key['name']);
-		    foreach($requests as $req_row => $req_key)
+		    foreach ($requests_info as $info_row => $info)
 		    {
-			    if($buyers_key['buyer_id'] === $req_key['buyer_id'])
-			    {
-				    array_push($arr['sum'], $req_key['sum']);
-			    }
-			    foreach($requests_info as $info_row => $info_key)
-			    {
-				    if(isset($info_key['request_id']) && $info_key['request_id'] === $req_key['request_id'] && !in_array($info_key['info'], $arr['info'])) 
-				    {
-						array_push($arr['info'], $info_key['info']);
-				    }
-			    }
+			if ($info['request_id'] === $request['request_id'])
+			{
+			    $requests_info_tmp += [$info['request_id'] => $info]; 
+			}
 		    }
 		}
+		foreach ($buyers as $buyers_key => $buyer) {
+		    $request_data = array(); // тут будем хранить данные о реквесте и обнуляем каждый цикл
+		    $join = array(); // для того чтобы потом слепить все массивы в один
+		    $buyer_id = $buyer['buyer_id'];
+		    $request_id = 0;
+		    array_push($join ,$buyer);
+		    foreach($requests as $request_row => $request)
+		    {
+			if($request['buyer_id'] === $buyer_id)
+			{
+			    array_push($join ,$request);
+			    if (array_key_exists($request['request_id'],$requests_info_tmp)) {
+				array_push($join ,$requests_info_tmp[$request['request_id']]);
+			    }
+			    $request_id = $request['request_id'];
+			    break;
+			}
+		    }
+		    array_push($request_data,$join);
+		    $arr += [$buyer_id => array($request_id => $request_data)];
+		}
+		
+		//var_dump($arr[1][1]); // arr[покупатель с айди = 1][запрос этого покутеля с айди = 1] = [name1,id1,sum1,info1....]
+		$result['data'] = array();
+		foreach($arr as $arr_key => $arr_value) // трюк, чтобы передать во view в нормальном виде
+		{
+		    $result['data'] += $arr_value;
+		}
+		
+//		Старое решение: 
+//		$arr['name'] = array();
+//		$arr['sum'] = array();
+//		$arr['info'] = array();
+//		$arr['buyer_id'] = array();
+//
+//		foreach($buyers as $buyers_row => $buyers_key)
+//		{
+//		    array_push($arr['buyer_id'], $buyers_key['buyer_id']); 
+//		    array_push($arr['name'], $buyers_key['name']);
+//		    foreach($requests as $req_row => $req_key)
+//		    {
+//			    if($buyers_key['buyer_id'] === $req_key['buyer_id'])
+//			    {
+//				    array_push($arr['sum'], $req_key['sum']);
+//			    }
+//			    foreach($requests_info as $info_row => $info_key)
+//			    {
+//				    if(isset($info_key['request_id']) && $info_key['request_id'] === $req_key['request_id'] && !in_array($info_key['info'], $arr['info'])) 
+//				    {
+//						array_push($arr['info'], $info_key['info']);
+//				    }
+//			    }
+//		    }
+//		}
 
 		$this->load->view('templates/header');
-		$this->load->view('tasks/getDataWithoutJoin', $arr);
+		$this->load->view('tasks/getDataWithoutJoin',$result);
 		$this->load->view('templates/footer');
 	}
 	
 	public function getDataWithJoin() //функция для второго задания, чтобы не грузить метод view
 	{
-		$query = $this->db->query('
-		SELECT
-		    b.buyer_id,
-		    b.name,
-		    r.sum,
-		    re.info
-		FROM
-		    requests_info re
-		RIGHT JOIN requests r ON
-		    re.request_id = r.request_id
-		INNER JOIN buyers b ON
-		    r.buyer_id = b.buyer_id
-		');
 		$data['name'] = array();
 		$data['sum'] = array();
 		$data['info'] = array();
 		$data['buyer_id'] = array();
 		
-		$tmp = $query->result(); // массив со всеми полями из запроса 
+		$tmp = $this->buyers_model->get_join();
 		    foreach ($tmp as $row) // запишем наши значения в отдельные массивы дял упрощения работы в view
 		    {
 			array_push($data['name'], $row->name);
